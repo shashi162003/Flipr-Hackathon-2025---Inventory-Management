@@ -13,6 +13,7 @@
   "license": "ISC",
   "dependencies": {
     "@zxing/library": "^0.21.3",
+    "axios": "^1.12.2",
     "bcrypt": "^6.0.0",
     "brcypt": "^1.0.1",
     "cloudinary": "^2.7.0",

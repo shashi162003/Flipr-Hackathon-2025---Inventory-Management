@@ -1,16 +1,8 @@
-const nodemailer = require('nodemailer');
+const axios = require('axios');
 require('dotenv').config();
 const colors = require('colors');
 
-const transporter = nodemailer.createTransport({
-    host: process.env.MAIL_HOST,
-    port: process.env.MAIL_PORT,
-    secure: false,
-    auth: {
-        user: process.env.MAIL_USER,
-        pass: process.env.MAIL_PASS,
-    },
-})
+const BREVO_API_URL = 'https://api.brevo.com/v3/smtp/email';
 
 const sendEmail = async (to, subject, htmlContent) => {
     try {
@@ -30,17 +22,38 @@ const sendEmail = async (to, subject, htmlContent) => {
             </div>
         `;
 
-        const info = await transporter.sendMail({
-            from: `"InvTrack" <${process.env.MAIL_FROM}>`,
-            to: to,
+        const payload = {
+            sender: {
+                name: "InvTrack",
+                email: process.env.MAIL_FROM
+            },
+            to: [
+                {email: to}
+            ],
             subject: subject,
-            html: masterHtml,
-        });
+            htmlContent: masterHtml
+        };
 
-        console.log(`Email sent: ${info.messageId}`.green);
-        return info;
+        const headers = {
+            'accept': 'application/json',
+            'api-key': process.env.BREVO_API_KEY,
+            'content-type': 'application/json'
+        };
+
+        const response = await axios.post(BREVO_API_URL, payload, { headers });
+
+        console.log((`Email sent via Brevo: ${response.data.messageId}`).green);
+        return response.data;
     } catch (error) {
-        console.error(`Error sending email: ${error.message}`.red);
+        if (error.response) {
+            console.error(`Error sending email via Brevo: ${error.response.status} ${error.response.statusText}`.red);
+            console.error('Brevo Error Details:'.red, JSON.stringify(error.response.data, null, 2));
+        } else if (error.request) {
+            console.error('Error sending email: No response received from Brevo.'.red, error.request);
+        } else {
+            console.error(`Error sending email: ${error.message}`.red);
+        }
+
         throw new Error("Email could not be sent.");
     }
 }
